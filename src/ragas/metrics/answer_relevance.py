@@ -7,6 +7,7 @@ import numpy as np
 from datasets import Dataset
 from langchain.callbacks.manager import trace_as_chain_group
 from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings.base import Embeddings
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from ragas.metrics.base import EvaluationMode, MetricWithLLM
@@ -44,18 +45,23 @@ class AnswerRelevancy(MetricWithLLM):
     strictness: int
         Here indicates the number questions generated per answer.
         Ideal range between 3 to 5.
+    embeddings: Embedding
+        The langchain wrapper of Embedding object.
+        E.g. HuggingFaceEmbeddings('BAAI/bge-base-en')
     """
 
     name: str = "answer_relevancy"
     evaluation_mode: EvaluationMode = EvaluationMode.qa
     batch_size: int = 15
     strictness: int = 3
+    embeddings: Embeddings | None = None
 
     def __post_init__(self: t.Self):
         self.temperature = 0.2 if self.strictness > 0 else 0
 
     def init_model(self: t.Self):
-        self.embedding = OpenAIEmbeddings()  # type: ignore
+        if self.embeddings is None:
+            self.embedding = OpenAIEmbeddings()  # type: ignore
 
     def _score_batch(
         self: t.Self,
